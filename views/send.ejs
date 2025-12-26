@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Send Emails - Bulk Email Sender</title>
+  <link rel="stylesheet" href="/css/output.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-pb3VMrR4xY9L+Xqf7x6GkM0JQqM1bS3kqAE+zN0erkK0U5tUhnI7dBDEuDfSUdifYEsaVPLpXwG8rN7xXxF3UQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+<body class="app-shell">
+  
+  <!-- Navigation -->
+  <nav class="app-nav">
+    <div class="app-nav-inner">
+      <div class="app-nav-brand">
+        <div class="p-2 rounded-lg bg-white/80 border border-slate-200 shadow-sm">
+          <i class="fas fa-envelope text-blue-600 text-lg"></i>
+        </div>
+        <span class="app-nav-title">Bulk Email Sender</span>
+      </div>
+
+      <div class="hidden md:flex space-x-1">
+        <a href="/smtp" class="nav-link">
+          <i class="fas fa-server mr-2 text-blue-500"></i>
+          <span>SMTP Setup</span>
+        </a>
+        <a href="/recipients" class="nav-link">
+          <i class="fas fa-users mr-2 text-blue-500"></i>
+          <span>Recipients</span>
+        </a>
+        <a href="/compose" class="nav-link">
+          <i class="fas fa-pen-nib mr-2 text-blue-500"></i>
+          <span>Compose</span>
+        </a>
+        <a href="/send" class="nav-link nav-link-active">
+          <i class="fas fa-paper-plane mr-2 text-blue-500"></i>
+          <span>Send</span>
+        </a>
+      </div>
+
+      <button onclick="clearSession()" class="btn-danger">
+        <i class="fas fa-trash-alt mr-2"></i>
+        <span>Clear Session</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="app-main">
+
+<div class="max-w-4xl mx-auto">
+  
+  <!-- Page Header -->
+  <div class="text-center mb-8">
+    <div class="inline-flex items-center justify-center px-4 py-2 rounded-full bg-white/80 border border-slate-200 shadow-sm mb-4">
+      <i class="fas fa-paper-plane text-blue-500 mr-2"></i>
+      <span class="text-xs font-semibold tracking-wide text-slate-600 uppercase">Step 4 · Send emails</span>
+    </div>
+    <h2 class="text-3xl font-bold text-slate-900 mb-2">Send bulk emails</h2>
+    <p class="text-slate-600">Review your campaign details and start sending personalized messages.</p>
+  </div>
+
+  <!-- Summary Card -->
+  <div class="card-glass mb-6">
+    <h3 class="text-xl font-semibold text-slate-900 mb-4 flex items-center">
+      <i class="fas fa-chart-bar text-blue-500 mr-2"></i>
+      <span>Campaign summary</span>
+    </h3>
+    
+    <div class="grid md:grid-cols-3 gap-6 mb-6">
+      <div class="glass-strong p-4 rounded-lg text-center">
+        <p class="text-slate-500 text-xs mb-1 uppercase tracking-wide">Recipients</p>
+        <p class="text-3xl font-bold text-slate-900"><%= recipientCount %></p>
+      </div>
+      
+      <div class="glass-strong p-4 rounded-lg text-center">
+        <p class="text-slate-500 text-xs mb-1 uppercase tracking-wide">Estimated duration</p>
+        <p class="text-3xl font-bold text-slate-900"><%= Math.ceil(recipientCount / 60) %></p>
+        <p class="text-slate-500 text-xs">minutes</p>
+      </div>
+      
+      <div class="glass-strong p-4 rounded-lg text-center">
+        <p class="text-slate-500 text-xs mb-1 uppercase tracking-wide">Rate limit</p>
+        <p class="text-3xl font-bold text-slate-900">1</p>
+        <p class="text-slate-500 text-xs">email / second</p>
+      </div>
+    </div>
+
+    <div class="glass-strong p-4 rounded-lg mb-4 text-left">
+      <p class="text-slate-500 text-xs mb-1 uppercase tracking-wide">Subject line</p>
+      <p class="text-slate-900 font-medium"><%= subject %></p>
+    </div>
+
+    <div class="p-4 rounded-lg bg-amber-50 border border-amber-200 flex items-start gap-3">
+      <i class="fas fa-triangle-exclamation text-amber-500 mt-0.5"></i>
+      <p class="text-sm text-amber-800">
+        <span class="font-semibold">Important:</span> Once sending starts, it cannot be stopped. Ensure your SMTP credentials and email content are correct.
+      </p>
+    </div>
+  </div>
+
+  <!-- Progress Section (Hidden initially) -->
+  <div id="progressSection" class="card-glass mb-6 hidden">
+    <h3 class="text-xl font-semibold text-slate-900 mb-4 flex items-center">
+      <i class="fas fa-chart-line text-blue-500 mr-2"></i>
+      <span>Sending progress</span>
+    </h3>
+    
+    <!-- Current Email Being Sent -->
+    <div id="currentEmailBox" class="glass-strong p-4 rounded-lg mb-6 text-left">
+      <p class="text-slate-500 text-xs mb-1 uppercase tracking-wide">Currently sending</p>
+      <p class="text-slate-900 font-mono text-sm" id="currentEmail">Preparing...</p>
+    </div>
+    
+    <div class="mb-6">
+      <div class="flex justify-between text-sm mb-2">
+        <span class="text-slate-600 text-sm">Progress</span>
+        <span class="text-slate-700 text-sm font-semibold" id="progressPercent">0%</span>
+      </div>
+      <div class="w-full bg-white/60 rounded-full h-8 overflow-hidden border border-slate-200 backdrop-blur-sm">
+        <div id="progressBar" class="h-full bg-gradient-to-r from-sky-500 to-sky-600 transition-all duration-300 flex items-center justify-center shadow-lg" style="width: 0%">
+          <span class="text-white text-sm font-bold" id="progressText">0 / <%= recipientCount %></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-4 mb-6">
+      <div class="glass-strong border-l-4 border-l-emerald-500 p-4 rounded-lg text-center">
+        <p class="text-emerald-600 text-xs mb-1 uppercase tracking-wide">Sent</p>
+        <p class="text-3xl font-bold text-emerald-600" id="sentCount">0</p>
+      </div>
+      
+      <div class="glass-strong border-l-4 border-l-red-500 p-4 rounded-lg text-center">
+        <p class="text-red-600 text-xs mb-1 uppercase tracking-wide">Failed</p>
+        <p class="text-3xl font-bold text-red-600" id="failedCount">0</p>
+      </div>
+      
+      <div class="glass-strong p-4 rounded-lg text-center">
+        <p class="text-slate-500 text-xs mb-1 uppercase tracking-wide">Remaining</p>
+        <p class="text-3xl font-bold text-slate-900" id="remainingCount"><%= recipientCount %></p>
+      </div>
+    </div>
+
+    <div id="statusMessage" class="p-4 glass-strong rounded-lg text-center border-l-4 border-blue-500">
+      <p class="text-slate-800 font-medium" id="statusText">Preparing to send...</p>
+    </div>
+
+    <!-- Error List (Hidden initially) -->
+    <div id="errorSection" class="hidden mt-4">
+      <h4 class="text-sm font-semibold text-red-700 mb-2">Failed emails</h4>
+      <div id="errorList" class="glass-strong p-4 rounded-lg max-h-48 overflow-y-auto text-left text-sm">
+      </div>
+    </div>
+  </div>
+
+  <!-- Action Buttons -->
+  <div class="flex justify-between items-center" id="actionButtons">
+    <a href="/compose" class="btn-secondary">
+      <i class="fas fa-pen mr-2"></i>
+      <span>Edit email</span>
+    </a>
+
+    <button onclick="startSending()" id="startButton" class="btn-primary text-lg px-8 py-3 flex items-center">
+      <i class="fas fa-play mr-2"></i>
+      <span>Start sending</span>
+    </button>
+
+    <a href="/" id="finishButton" class="btn-primary hidden">
+      <i class="fas fa-check mr-2"></i>
+      <span>Finish</span>
+    </a>
+  </div>
+
+</div>
+
+<script>
+  let sending = false;
+  let eventSource = null;
+
+  async function startSending() {
+    if (sending) return;
+
+    if (!confirm('Start sending <%= recipientCount %> emails? This process cannot be stopped once started.')) {
+      return;
+    }
+
+    sending = true;
+    document.getElementById('startButton').disabled = true;
+    document.getElementById('startButton').classList.add('opacity-50', 'cursor-not-allowed');
+    document.getElementById('progressSection').classList.remove('hidden');
+
+    try {
+      const response = await fetch('/send/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        // Start listening to progress updates
+        eventSource = new EventSource('/send/progress');
+
+        eventSource.onmessage = (event) => {
+          const data = JSON.parse(event.data);
+          updateProgress(data);
+        };
+
+        eventSource.onerror = (error) => {
+          console.error('SSE Error:', error);
+          eventSource.close();
+        };
+      } else {
+        alert('Failed to start sending: ' + result.error);
+        sending = false;
+        document.getElementById('startButton').disabled = false;
+        document.getElementById('startButton').classList.remove('opacity-50', 'cursor-not-allowed');
+      }
+    } catch (error) {
+      alert('Error starting email send: ' + error.message);
+      sending = false;
+      document.getElementById('startButton').disabled = false;
+      document.getElementById('startButton').classList.remove('opacity-50', 'cursor-not-allowed');
+    }
+  }
+
+  function updateProgress(data) {
+    const { total, sent, failed, status, errors, currentEmail } = data;
+    const progress = Math.round((sent + failed) / total * 100);
+
+    // Update current email
+    if (currentEmail) {
+      document.getElementById('currentEmail').textContent = currentEmail;
+    }
+
+    // Update progress bar
+    document.getElementById('progressBar').style.width = progress + '%';
+    document.getElementById('progressPercent').textContent = progress + '%';
+    document.getElementById('progressText').textContent = `${sent + failed} / ${total}`;
+
+    // Update counts
+    document.getElementById('sentCount').textContent = sent;
+    document.getElementById('failedCount').textContent = failed;
+    document.getElementById('remainingCount').textContent = total - sent - failed;
+
+    // Update status message
+    if (status === 'sending') {
+      document.getElementById('statusText').textContent = `Sending emails... (${sent + failed}/${total})`;
+      document.getElementById('statusMessage').className = 'p-4 glass-strong rounded-lg text-center border-l-4 border-blue-500';
+    } else if (status === 'completed') {
+      document.getElementById('currentEmail').textContent = 'All emails processed.';
+      document.getElementById('statusText').textContent = `All emails processed. Sent: ${sent}, Failed: ${failed}`;
+      document.getElementById('statusMessage').className = 'p-4 glass-strong rounded-lg text-center border-l-4 border-emerald-500';
+      
+      document.getElementById('startButton').classList.add('hidden');
+      document.getElementById('finishButton').classList.remove('hidden');
+
+      if (eventSource) {
+        eventSource.close();
+      }
+    } else if (status === 'error') {
+      document.getElementById('statusText').textContent = '❌ Error occurred during sending';
+      document.getElementById('statusMessage').className = 'p-4 glass-dark rounded-lg text-center border-l-4 border-red-500';
+
+      if (eventSource) {
+        eventSource.close();
+      }
+    }
+
+    // Show errors if any
+    if (errors && errors.length > 0) {
+      document.getElementById('errorSection').classList.remove('hidden');
+      const errorList = document.getElementById('errorList');
+      errorList.innerHTML = errors.map(err => `
+        <div class="mb-2 pb-2 border-b border-slate-200 last:border-0">
+          <p class="text-red-600 font-medium">${err.email}</p>
+          <p class="text-slate-700 text-xs mt-0.5">${err.error}</p>
+        </div>
+      `).join('');
+    }
+  }
+
+  // Check if already sending
+  <% if (sending.status === 'sending') { %>
+    window.addEventListener('DOMContentLoaded', () => {
+      sending = true;
+      document.getElementById('startButton').disabled = true;
+      document.getElementById('startButton').classList.add('opacity-50', 'cursor-not-allowed');
+      document.getElementById('progressSection').classList.remove('hidden');
+
+      // Start listening to progress updates
+      eventSource = new EventSource('/send/progress');
+
+      eventSource.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        updateProgress(data);
+      };
+
+      eventSource.onerror = (error) => {
+        console.error('SSE Error:', error);
+        eventSource.close();
+      };
+    });
+  <% } %>
+</script>
+
+</div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="app-footer">
+    <div class="app-footer-inner">
+      <p class="font-medium text-slate-700">Bulk Email Sender · Local Gmail SMTP tool</p>
+      <p class="mt-1">Recommended limit: 500 emails/day for personal Gmail accounts.</p>
+    </div>
+  </footer>
+
+  <script>
+    if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.setItem('bes.currentPage', 'send');
+    }
+
+    async function clearSession() {
+      if (!confirm('Are you sure you want to clear all session data? This will reset SMTP credentials, recipients, and email content.')) {
+        return;
+      }
+
+      try {
+        const response = await fetch('/session/clear', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          alert('Session cleared successfully!');
+          window.location.href = '/';
+        } else {
+          alert('Failed to clear session: ' + result.error);
+        }
+      } catch (error) {
+        alert('Error clearing session: ' + error.message);
+      }
+    }
+  </script>
+</body>
+</html>

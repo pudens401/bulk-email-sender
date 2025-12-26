@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SMTP Setup - Bulk Email Sender</title>
+  <link rel="stylesheet" href="/css/output.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-pb3VMrR4xY9L+Xqf7x6GkM0JQqM1bS3kqAE+zN0erkK0U5tUhnI7dBDEuDfSUdifYEsaVPLpXwG8rN7xXxF3UQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+<body class="app-shell">
+  
+  <!-- Navigation -->
+  <nav class="app-nav">
+    <div class="app-nav-inner">
+      <div class="app-nav-brand">
+        <div class="p-2 rounded-lg bg-white/80 border border-slate-200 shadow-sm">
+          <i class="fas fa-envelope text-blue-600 text-lg"></i>
+        </div>
+        <span class="app-nav-title">Bulk Email Sender</span>
+      </div>
+
+      <div class="hidden md:flex space-x-1">
+        <a href="/smtp" class="nav-link nav-link-active">
+          <i class="fas fa-server mr-2 text-blue-500"></i>
+          <span>SMTP Setup</span>
+        </a>
+        <a href="/recipients" class="nav-link">
+          <i class="fas fa-users mr-2 text-blue-500"></i>
+          <span>Recipients</span>
+        </a>
+        <a href="/compose" class="nav-link">
+          <i class="fas fa-pen-nib mr-2 text-blue-500"></i>
+          <span>Compose</span>
+        </a>
+        <a href="/send" class="nav-link">
+          <i class="fas fa-paper-plane mr-2 text-blue-500"></i>
+          <span>Send</span>
+        </a>
+      </div>
+
+      <button onclick="clearSession()" class="btn-danger">
+        <i class="fas fa-trash-alt mr-2"></i>
+        <span>Clear Session</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="app-main">
+
+<div class="max-w-2xl mx-auto">
+  
+  <!-- Page Header -->
+  <div class="text-center mb-8">
+    <div class="inline-flex items-center justify-center px-4 py-2 rounded-full bg-white/80 border border-slate-200 shadow-sm mb-4">
+      <i class="fas fa-server text-blue-500 mr-2"></i>
+      <span class="text-xs font-semibold tracking-wide text-slate-600 uppercase">Step 1 · SMTP Configuration</span>
+    </div>
+    <h2 class="text-3xl font-bold text-slate-900 mb-2">SMTP Configuration</h2>
+    <p class="text-slate-600">Configure your Gmail SMTP credentials to send bulk emails.</p>
+  </div>
+
+  <!-- Alerts -->
+  <% if (error) { %>
+    <div class="alert-error mb-6">
+      <strong>Error:</strong> <%= error %>
+    </div>
+  <% } %>
+
+  <% if (success) { %>
+    <div class="alert-success mb-6">
+      <strong>Success:</strong> <%= success %>
+    </div>
+  <% } %>
+
+  <!-- SMTP Form Card -->
+  <div class="card-soft mb-6">
+    <form action="/smtp/verify" method="POST">
+      
+      <div class="mb-6">
+        <label class="block text-slate-800 font-medium mb-2">Gmail address</label>
+        <input 
+          type="email" 
+          name="email" 
+          class="input-field" 
+          placeholder="your.email@gmail.com"
+          value="<%= smtp.email %>"
+          required
+        >
+      </div>
+
+      <div class="mb-6">
+        <label class="block text-slate-800 font-medium mb-2">App password</label>
+        <input 
+          type="password" 
+          name="appPassword" 
+          class="input-field" 
+          placeholder="xxxx xxxx xxxx xxxx"
+          value="<%= smtp.appPassword %>"
+          required
+        >
+        <p class="text-slate-500 text-sm mt-2">
+          Use the 16-character app password generated in your Google Account security settings.
+        </p>
+      </div>
+
+      <button type="submit" class="btn-primary w-full">
+        <i class="fas fa-key mr-2"></i>
+        <span>Verify SMTP credentials</span>
+      </button>
+
+    </form>
+
+    <% if (smtp.verified) { %>
+      <div class="mt-6 pt-6 border-t border-slate-200">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-3">
+            <div>
+              <p class="flex items-center text-sm font-semibold text-emerald-600">
+                <i class="fas fa-check-circle mr-2"></i>
+                <span>SMTP verified</span>
+              </p>
+              <p class="text-xs text-slate-500"><%= smtp.email %></p>
+            </div>
+          </div>
+          <a href="/recipients" class="btn-secondary">
+            <span>Next: Recipients</span>
+            <i class="fas fa-arrow-right ml-2"></i>
+          </a>
+        </div>
+      </div>
+    <% } %>
+  </div>
+
+  <!-- Instructions Card -->
+  <div class="card-glass">
+    <h3 class="text-xl font-semibold text-slate-900 mb-4 flex items-center">
+      <i class="fas fa-info-circle text-blue-500 mr-2"></i>
+      <span>How to generate a Gmail app password</span>
+    </h3>
+    <ol class="space-y-3 text-slate-700">
+      <li class="flex items-start">
+        <span class="font-bold text-blue-500 mr-3">1.</span>
+        <span>Enable 2-Factor Authentication on your Gmail account</span>
+      </li>
+      <li class="flex items-start">
+        <span class="font-bold text-blue-500 mr-3">2.</span>
+        <span>Visit: <a href="https://myaccount.google.com/apppasswords" target="_blank" class="text-blue-600 hover:underline font-medium">myaccount.google.com/apppasswords</a></span>
+      </li>
+      <li class="flex items-start">
+        <span class="font-bold text-blue-500 mr-3">3.</span>
+        <span>Generate a new app password (select "Mail" and "Other")</span>
+      </li>
+      <li class="flex items-start">
+        <span class="font-bold text-blue-500 mr-3">4.</span>
+        <span>Copy the 16-character password and paste it above</span>
+      </li>
+    </ol>
+
+    <div class="mt-6 pt-4 border-t border-slate-200">
+      <p class="text-sm text-slate-600">
+        <span class="font-semibold">Security note:</span> Your credentials are stored in session memory only and never written to disk.
+      </p>
+    </div>
+  </div>
+
+</div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="app-footer">
+    <div class="app-footer-inner">
+      <p class="font-medium text-slate-700">Bulk Email Sender · Local Gmail SMTP tool</p>
+      <p class="mt-1">Recommended limit: 500 emails/day for personal Gmail accounts.</p>
+    </div>
+  </footer>
+
+  <script>
+    if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.setItem('bes.currentPage', 'smtp');
+    }
+
+    async function clearSession() {
+      if (!confirm('Are you sure you want to clear all session data? This will reset SMTP credentials, recipients, and email content.')) {
+        return;
+      }
+
+      try {
+        const response = await fetch('/session/clear', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          alert('Session cleared successfully!');
+          window.location.href = '/';
+        } else {
+          alert('Failed to clear session: ' + result.error);
+        }
+      } catch (error) {
+        alert('Error clearing session: ' + error.message);
+      }
+    }
+  </script>
+</body>
+</html>

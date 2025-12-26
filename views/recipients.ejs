@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recipients - Bulk Email Sender</title>
+  <link rel="stylesheet" href="/css/output.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-pb3VMrR4xY9L+Xqf7x6GkM0JQqM1bS3kqAE+zN0erkK0U5tUhnI7dBDEuDfSUdifYEsaVPLpXwG8rN7xXxF3UQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+<body class="app-shell">
+  
+  <!-- Navigation -->
+  <nav class="app-nav">
+    <div class="app-nav-inner">
+      <div class="app-nav-brand">
+        <div class="p-2 rounded-lg bg-white/80 border border-slate-200 shadow-sm">
+          <i class="fas fa-envelope text-blue-600 text-lg"></i>
+        </div>
+        <span class="app-nav-title">Bulk Email Sender</span>
+      </div>
+
+      <div class="hidden md:flex space-x-1">
+        <a href="/smtp" class="nav-link">
+          <i class="fas fa-server mr-2 text-blue-500"></i>
+          <span>SMTP Setup</span>
+        </a>
+        <a href="/recipients" class="nav-link nav-link-active">
+          <i class="fas fa-users mr-2 text-blue-500"></i>
+          <span>Recipients</span>
+        </a>
+        <a href="/compose" class="nav-link">
+          <i class="fas fa-pen-nib mr-2 text-blue-500"></i>
+          <span>Compose</span>
+        </a>
+        <a href="/send" class="nav-link">
+          <i class="fas fa-paper-plane mr-2 text-blue-500"></i>
+          <span>Send</span>
+        </a>
+      </div>
+
+      <button onclick="clearSession()" class="btn-danger">
+        <i class="fas fa-trash-alt mr-2"></i>
+        <span>Clear Session</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="app-main">
+
+<div class="max-w-6xl mx-auto">
+  
+  <!-- Page Header -->
+  <div class="text-center mb-8">
+    <div class="inline-flex items-center justify-center px-4 py-2 rounded-full bg-white/80 border border-slate-200 shadow-sm mb-4">
+      <i class="fas fa-users text-blue-500 mr-2"></i>
+      <span class="text-xs font-semibold tracking-wide text-slate-600 uppercase">Step 2 · Recipients</span>
+    </div>
+    <h2 class="text-3xl font-bold text-slate-900 mb-2">Manage recipients</h2>
+    <p class="text-slate-600">Upload a CSV file or add recipients manually.</p>
+  </div>
+
+  <!-- Alerts -->
+  <% if (error) { %>
+    <div class="alert-error mb-6">
+      <%= error %>
+    </div>
+  <% } %>
+
+  <% if (success) { %>
+    <div class="alert-success mb-6">
+      <%= success %>
+    </div>
+  <% } %>
+
+  <div class="grid md:grid-cols-2 gap-6 mb-8">
+    
+    <!-- CSV Upload Card -->
+    <div class="card-soft">
+      <h3 class="text-lg font-semibold text-slate-900 mb-2 flex items-center">
+        <i class="fas fa-file-csv text-blue-500 mr-2"></i>
+        <span>Upload CSV file</span>
+      </h3>
+      
+      <form action="/recipients/upload" method="POST" enctype="multipart/form-data">
+        <div class="mb-4">
+          <label class="block text-slate-800 font-medium mb-2">Select CSV file</label>
+          <input 
+            type="file" 
+            name="csvFile" 
+            accept=".csv"
+            class="input-field file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-500 file:text-white hover:file:bg-blue-600 cursor-pointer"
+            required
+          >
+        </div>
+
+        <button type="submit" class="btn-primary w-full">
+          <i class="fas fa-upload mr-2"></i>
+          <span>Upload CSV</span>
+        </button>
+      </form>
+
+      <div class="mt-4 p-4 rounded-lg bg-slate-50 border border-slate-200 text-left">
+        <p class="text-sm text-slate-700 font-medium mb-2">Expected CSV format</p>
+        <code class="text-xs text-slate-600 font-mono">
+          name,email<br>
+          John Doe,john@example.com<br>
+          Jane Smith,jane@example.com
+        </code>
+      </div>
+    </div>
+
+    <!-- Manual Add Card -->
+    <div class="card-soft">
+      <h3 class="text-lg font-semibold text-slate-900 mb-2 flex items-center">
+        <i class="fas fa-plus-circle text-orange-500 mr-2"></i>
+        <span>Add manually</span>
+      </h3>
+      
+      <div class="mb-4">
+        <label class="block text-slate-800 font-medium mb-2">Name</label>
+        <input 
+          type="text" 
+          id="manualName" 
+          class="input-field" 
+          placeholder="John Doe"
+        >
+      </div>
+
+      <div class="mb-4">
+        <label class="block text-slate-800 font-medium mb-2">Email</label>
+        <input 
+          type="email" 
+          id="manualEmail" 
+          class="input-field" 
+          placeholder="john@example.com"
+        >
+      </div>
+
+      <button onclick="addManualRecipient()" class="btn-secondary w-full">
+        <i class="fas fa-user-plus mr-2"></i>
+        <span>Add recipient</span>
+      </button>
+
+      <div class="mt-4 p-4 bg-slate-50 border border-slate-200 rounded-lg">
+        <p class="text-sm text-slate-600">
+          <span class="font-semibold">Tip:</span> You can edit recipients in the table below after adding them.
+        </p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Recipients Table -->
+  <div class="card-soft">
+    <div class="flex justify-between items-center mb-6">
+      <h3 class="text-xl font-semibold text-slate-900 flex items-center gap-2">
+        <i class="fas fa-address-book text-blue-500"></i>
+        <span>Recipients (<span id="recipientCount"><%= recipients.length %></span>)</span>
+      </h3>
+      
+      <% if (recipients.length > 0) { %>
+        <div class="space-x-3">
+          <button onclick="saveRecipients()" class="btn-primary">
+            <i class="fas fa-save mr-2"></i>
+            <span>Save changes</span>
+          </button>
+          <a href="/compose" class="btn-secondary inline-block">
+            <span>Next: Compose</span>
+            <i class="fas fa-arrow-right ml-2"></i>
+          </a>
+        </div>
+      <% } %>
+    </div>
+
+    <% if (recipients.length === 0) { %>
+      <div class="text-center py-12 text-slate-400">
+        <p class="text-xl font-medium text-slate-700">No recipients added yet</p>
+        <p class="mt-2 text-slate-500">Upload a CSV file or add recipients manually above.</p>
+      </div>
+    <% } else { %>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left" id="recipientsTable">
+          <thead class="bg-slate-50">
+            <tr>
+              <th class="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">#</th>
+              <th class="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Name</th>
+              <th class="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Email</th>
+              <th class="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide text-center">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="recipientsTableBody" class="divide-y divide-slate-100">
+            <% recipients.forEach((recipient, index) => { %>
+              <tr class="hover:bg-slate-50 transition-colors">
+                <td class="px-4 py-3 text-sm text-slate-500"><%= index + 1 %></td>
+                <td class="px-4 py-3">
+                  <input 
+                    type="text" 
+                    class="input-field py-2" 
+                    value="<%= recipient.name %>"
+                    data-index="<%= index %>"
+                    data-field="name"
+                  >
+                </td>
+                <td class="px-4 py-3">
+                  <input 
+                    type="email" 
+                    class="input-field py-2" 
+                    value="<%= recipient.email %>"
+                    data-index="<%= index %>"
+                    data-field="email"
+                  >
+                </td>
+                <td class="px-4 py-3 text-center">
+                  <button 
+                    onclick="removeRecipient(<%= index %>)"
+                    class="btn-danger text-xs px-3 py-1.5"
+                  >
+                    <i class="fas fa-trash-alt mr-1"></i>
+                    <span>Remove</span>
+                  </button>
+                </td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="mt-6 p-4 bg-slate-50 border border-slate-200 rounded-lg">
+        <p class="text-sm text-slate-600">
+          <span class="font-semibold">Gmail limits:</span> Recommended maximum of 500 emails/day for personal Gmail accounts (2000 for Workspace).
+        </p>
+      </div>
+    <% } %>
+  </div>
+
+</div>
+
+<script>
+  let recipients = <%- JSON.stringify(recipients) %>;
+
+  function addManualRecipient() {
+    const name = document.getElementById('manualName').value.trim();
+    const email = document.getElementById('manualEmail').value.trim();
+
+    if (!name || !email) {
+      alert('Please enter both name and email');
+      return;
+    }
+
+    if (!email.includes('@')) {
+      alert('Please enter a valid email address');
+      return;
+    }
+
+    recipients.push({ name, email });
+    updateTable();
+
+    document.getElementById('manualName').value = '';
+    document.getElementById('manualEmail').value = '';
+  }
+
+  function removeRecipient(index) {
+    if (confirm('Remove this recipient?')) {
+      recipients.splice(index, 1);
+      updateTable();
+    }
+  }
+
+  function updateTable() {
+    const tbody = document.getElementById('recipientsTableBody');
+    
+    if (recipients.length === 0) {
+      location.reload();
+      return;
+    }
+
+    tbody.innerHTML = recipients.map((r, i) => `
+      <tr class="hover:bg-slate-50 transition-colors">
+        <td class="px-4 py-3 text-sm text-slate-500">${i + 1}</td>
+        <td class="px-4 py-3">
+          <input 
+            type="text" 
+            class="input-field py-2" 
+            value="${r.name}"
+            onchange="updateRecipient(${i}, 'name', this.value)"
+          >
+        </td>
+        <td class="px-4 py-3">
+          <input 
+            type="email" 
+            class="input-field py-2" 
+            value="${r.email}"
+            onchange="updateRecipient(${i}, 'email', this.value)"
+          >
+        </td>
+        <td class="px-4 py-3 text-center">
+          <button 
+            onclick="removeRecipient(${i})"
+            class="btn-danger text-xs px-3 py-1.5"
+          >
+            <i class="fas fa-trash-alt mr-1"></i>
+            <span>Remove</span>
+          </button>
+        </td>
+      </tr>
+    `).join('');
+
+    document.getElementById('recipientCount').textContent = recipients.length;
+  }
+
+  function updateRecipient(index, field, value) {
+    recipients[index][field] = value;
+  }
+
+  async function saveRecipients() {
+    try {
+      const response = await fetch('/recipients/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ recipients })
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        alert(`Successfully saved ${result.count} recipients!`);
+        location.reload();
+      } else {
+        alert('Failed to save recipients: ' + result.error);
+      }
+    } catch (error) {
+      alert('Error saving recipients: ' + error.message);
+    }
+  }
+
+  // Listen for changes in table inputs
+  document.addEventListener('DOMContentLoaded', () => {
+    const inputs = document.querySelectorAll('#recipientsTable input');
+    inputs.forEach(input => {
+      input.addEventListener('change', (e) => {
+        const index = parseInt(e.target.dataset.index);
+        const field = e.target.dataset.field;
+        recipients[index][field] = e.target.value;
+      });
+    });
+  });
+</script>
+
+</div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="app-footer">
+    <div class="app-footer-inner">
+      <p class="font-medium text-slate-700">Bulk Email Sender · Local Gmail SMTP tool</p>
+      <p class="mt-1">Recommended limit: 500 emails/day for personal Gmail accounts.</p>
+    </div>
+  </footer>
+
+  <script>
+    if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.setItem('bes.currentPage', 'recipients');
+    }
+
+    async function clearSession() {
+      if (!confirm('Are you sure you want to clear all session data? This will reset SMTP credentials, recipients, and email content.')) {
+        return;
+      }
+
+      try {
+        const response = await fetch('/session/clear', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          alert('Session cleared successfully!');
+          window.location.href = '/';
+        } else {
+          alert('Failed to clear session: ' + result.error);
+        }
+      } catch (error) {
+        alert('Error clearing session: ' + error.message);
+      }
+    }
+  </script>
+</body>
+</html>
